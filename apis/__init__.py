@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import os
 
 
 def create_app():

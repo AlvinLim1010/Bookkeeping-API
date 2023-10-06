@@ -1,7 +1,9 @@
 import uvicorn
-
-from src.apis.routes import app
+import os
+from apis.routes import app
 
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", port=9000, reload=True)
+    port: int = os.getenv('API_PORT', 9000)
+
+    uvicorn.run("app:app", port=int(port), reload=True)
