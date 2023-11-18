@@ -44,12 +44,11 @@ class UserRepo:
         if hashed_password.encode() == bcrypt.hashpw(user_keyin_password.encode(), salt.encode()):
             return True
         
-    # async def delete_user(db: Session, input_item: schemas.UserDelete) -> Optional[User]:
-    #     user = User(username=input_item.name, passowrd=input_item.password, email=input_item.email)
-    #     db.add(user)
-    #     db.commit()
-    #     db.refresh(user)
-    #     return user
+    async def delete_user(cls, db: Session, input: schemas.UserBase) -> Optional[User]:
+        user = cls.base.fetch_user_by_username(db, input.username)
+        db.delete(user)
+        db.commit()
+        return user
 
     @classmethod
     def update_password(cls, db: Session, input: schemas.UserUpdate) -> Optional[User]:

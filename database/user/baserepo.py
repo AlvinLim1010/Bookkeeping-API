@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from database.user.models import User
-from database.user import schemas
 
 from typing import Optional
 
