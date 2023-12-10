@@ -22,8 +22,6 @@ app = create_app()
 
 models.Base.metadata.create_all(bind=engine)
 
-ActionType = ['Action', 'Food', 'Household', 'Income', 'Travel', 'Misc']
-
 
 @app.post('/user/login', tags=["User"], response_model=user_schemas.UserLogin, status_code=HTTPStatus.OK)
 def user_login(user_request: user_schemas.UserLogin, db: Session = Depends(get_db)):
@@ -54,7 +52,7 @@ def user_register(user_request: user_schemas.UserCreate, db: Session = Depends(g
     return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
 
 
-@app.post('/user/reset', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.CREATED)
+@app.post('/user/reset', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.OK)
 def user_reset_password(user_request: user_schemas.UserUpdate, db: Session = Depends(get_db)):
     db_user = UserRepo.fetch_user_by_email(db=db, email=user_request.email)
     if UserRepo.check_password(user_keyin_password=user_request.old_password, user_db_password=db_user.password):
@@ -75,7 +73,7 @@ def user_info(user_request: user_schemas.UserBase, db: Session = Depends(get_db)
     raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
 
 
-@app.post('/user/forget', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.CREATED)
+@app.post('/user/forget', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.OK)
 def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = Depends(get_db)):
     if UserRepo.fetch_user_by_email(db=db, email=user_request.email):
 
@@ -109,7 +107,7 @@ def create_actions(action_request: action_schemas.ActionCreate, db: Session = De
                 "user_id": db_user.id,
             }
 
-            action = ActionRepo.add_action(db=db, input=action_create)
+            action = ActionRepo.add_action(db=db, action_input=action_create)
 
             return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
         
@@ -118,15 +116,17 @@ def create_actions(action_request: action_schemas.ActionCreate, db: Session = De
     raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
 
 
-@app.patch('/actions/update')
-def update_actions():
-    return {'update actions', HTTPStatus.OK}
+@app.patch('/actions/update', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
+def update_actions(action_request: action_schemas.ActionUpdate, db: Session = Depends(get_db)):
+    action = ActionRepo.update_action(db=db, action_input=action_request)
+
+    return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
 
 
 @app.delete('/actions/delete', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
-def delete_actions(action_request: action_schemas.ActionDelete, db: Session = Depends(get_db)):
+def delete_actions(action_request: action_schemas.ActionID, db: Session = Depends(get_db)):
     
     action = ActionRepo.delete_action(db=db, action_id=action_request.action_id)
-    
+
     return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
     
