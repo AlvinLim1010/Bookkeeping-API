@@ -7,3 +7,5 @@ class ActionTypes(Enum):
     INCOME = "Income"
     TRAVEL = "Travel"
     MISC = "Misc"
+    ENTERTAINMENT = "Entertainment"
+    OTHERS = "Others"
