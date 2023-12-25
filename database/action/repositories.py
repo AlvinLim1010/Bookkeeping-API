@@ -16,6 +16,10 @@ class ActionRepo:
     def fetch_actions_by_user_id(cls, db: Session, user_id: int) -> Optional[Action]:
         return cls.base.fetch_actions_by_user_id(db, user_id)
     
+    @classmethod
+    def fetch_all_actions(cls, db: Session) -> Optional[Action]:
+        return cls.base.fetch_all_actions(db)
+    
     def add_action(db: Session, action_input: schemas.ActionCreate) -> Optional[Action]:
         action = Action(
             date=action_input['date'], 
