@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
-import datetime
 from http import HTTPStatus
 
 from apis import create_app
@@ -88,9 +87,14 @@ def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = De
 
 
 
-@app.get('/actions/get')
-def get_actions():
-    return {'get actions', HTTPStatus.OK}
+@app.get('/actions/overview', tags=["Action"], status_code=HTTPStatus.OK)
+def get_actions(username: str, db: Session = Depends(get_db)):
+    if db_user:= UserRepo.fetch_user_by_username(db, username=username.upper()):
+        all_actions = ActionRepo.fetch_actions_by_user_id(db, db_user.id)
+        content = [action.as_dict() for action in all_actions]
+        return JSONResponse(status_code=HTTPStatus.OK, content=content)
+    
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
 
 
 @app.post('/actions/create', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.CREATED)

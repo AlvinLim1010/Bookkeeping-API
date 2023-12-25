@@ -22,7 +22,7 @@ class UserRepo:
         return cls.base.fetch_user_by_id(db, user_id)
     
     @classmethod
-    def fetch_user_by_username(cls, db: Session, username: str):
+    def fetch_user_by_username(cls, db: Session, username: str)-> Optional[User]:
         return cls.base.fetch_user_by_username(db, username)
     
     @classmethod

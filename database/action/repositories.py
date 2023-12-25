@@ -13,8 +13,8 @@ class ActionRepo:
         return cls.base.fetch_single_action_by_id(db, action_id)
     
     @classmethod
-    def fetch_actions_by_user_id(cls, db: Session, user_id: int, offset: int) -> Optional[Action]:
-        return cls.base.fetch_actions_by_user_id(db, user_id, offset)
+    def fetch_actions_by_user_id(cls, db: Session, user_id: int) -> Optional[Action]:
+        return cls.base.fetch_actions_by_user_id(db, user_id)
     
     def add_action(db: Session, action_input: schemas.ActionCreate) -> Optional[Action]:
         action = Action(
