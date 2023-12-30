@@ -20,6 +20,10 @@ class ActionRepo:
     def fetch_all_actions(cls, db: Session) -> Optional[Action]:
         return cls.base.fetch_all_actions(db)
     
+    @classmethod
+    def fetch_updated_actions_from_days(cls, db: Session, days: int) -> Optional[Action]:
+        return cls.base.fetch_updated_actions_from_days(db, days)
+    
     def add_action(db: Session, action_input: schemas.ActionCreate) -> Optional[Action]:
         action = Action(
             date=action_input['date'], 

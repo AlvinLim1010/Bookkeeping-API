@@ -1,5 +1,7 @@
+from collections import Counter
+from typing import List, Optional
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from http import HTTPStatus
 
@@ -87,7 +89,7 @@ def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = De
 
 
 
-@app.get('/actions/overview', tags=["Action"], status_code=HTTPStatus.OK)
+@app.get('/actions', tags=["Action"], status_code=HTTPStatus.OK)
 def get_actions(username: str, db: Session = Depends(get_db)):
     if db_user:= UserRepo.fetch_user_by_username(db, username=username.upper()):
         all_actions = ActionRepo.fetch_actions_by_user_id(db, db_user.id)
@@ -96,6 +98,65 @@ def get_actions(username: str, db: Session = Depends(get_db)):
     
     raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
 
+@app.get('/actions/overview', tags=["Action"], status_code=HTTPStatus.OK)
+def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    all_actions = ActionRepo.fetch_all_actions(db)
+
+    sorted_actions: List[models.Action] = sorted(all_actions, key=lambda x: x.date)
+    start_date = sorted_actions[0].date
+    final_date = sorted_actions[-1].date
+    
+    valid_categories = {category.value for category in enums.ActionTypes}
+
+    main_categories = [action.main_category for action in all_actions]
+    category_counts = Counter(main_categories)
+
+    all_category = {category: category_counts.get(category, 0) for category in valid_categories}
+
+    previous_category = {}
+    for day in range(0,7):
+        previous_actions = ActionRepo.fetch_updated_actions_from_days(db, day)
+        main_categories = [action.main_category for action in previous_actions]
+        category_counts = Counter(main_categories)
+
+        previous_category[day] = {category: category_counts.get(category, 0) for category in valid_categories}
+
+    content = { 
+        "all_category": {
+            **all_category, 
+            "Count": len(all_actions),
+            "Start_date": start_date.strftime("%Y-%m-%d"),
+            "Final_date": final_date.strftime("%Y-%m-%d"),
+        },
+        "previous_category": previous_category,
+    }
+    
+    if username:
+        if db_user:= UserRepo.fetch_user_by_username(db, username=username.upper()):
+            all_actions = ActionRepo.fetch_actions_by_user_id(db, db_user.id)
+            sorted_actions: List[models.Action] = sorted(all_actions, key=lambda x: x.date)
+            start_date = sorted_actions[0].date
+            final_date = sorted_actions[-1].date
+            
+            main_categories = [action.main_category for action in all_actions]
+            category_counts = Counter(main_categories)
+
+            user_category = {category: category_counts.get(category, 0) for category in valid_categories}
+
+            content = {
+                **content, 
+                "user_category": {
+                    **user_category, 
+                    "Count": len(all_actions),
+                    "Start_date": start_date.strftime("%Y-%m-%d"),
+                    "Final_date": final_date.strftime("%Y-%m-%d"),
+                },
+            }
+
+        else:
+            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
+
+    return JSONResponse(status_code=HTTPStatus.OK, content=content)
 
 @app.post('/actions/create', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.CREATED)
 def create_actions(action_request: action_schemas.ActionCreate, db: Session = Depends(get_db)):
