@@ -16,14 +16,17 @@ class ActionBaseRepo:
     def fetch_all_actions(db: Session) -> Optional[Action]:
         return db.query(Action).all()
     
-    def fetch_updated_actions_from_days(db: Session, days: int) -> Optional[Action]:
+    def fetch_updated_actions_from_days(db: Session, days: int, user_id: int) -> Optional[Action]:
         days_ago = (datetime.utcnow() - timedelta(days=days)).date()
         return (
             db.query(Action)
             .filter(
-                or_(
-                    func.date(Action.updated_at) == days_ago,
-                    and_(func.date(Action.updated_at) == None, func.date(Action.created_at) == days_ago),
+                and_(
+                    or_(
+                        func.date(Action.updated_at) == days_ago,
+                        and_(func.date(Action.updated_at) == None, func.date(Action.created_at) == days_ago),
+                    ),
+                    Action.user_id == user_id
                 )
             )
             .all()

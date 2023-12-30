@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, Query
@@ -113,22 +114,13 @@ def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get
 
     all_category = {category: category_counts.get(category, 0) for category in valid_categories}
 
-    previous_category = {}
-    for day in range(0,7):
-        previous_actions = ActionRepo.fetch_updated_actions_from_days(db, day)
-        main_categories = [action.main_category for action in previous_actions]
-        category_counts = Counter(main_categories)
-
-        previous_category[day] = {category: category_counts.get(category, 0) for category in valid_categories}
-
     content = { 
         "all_category": {
             **all_category, 
-            "Count": len(all_actions),
+            "Total": len(all_actions),
             "Start_date": start_date.strftime("%Y-%m-%d"),
             "Final_date": final_date.strftime("%Y-%m-%d"),
         },
-        "previous_category": previous_category,
     }
     
     if username:
@@ -143,14 +135,30 @@ def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get
 
             user_category = {category: category_counts.get(category, 0) for category in valid_categories}
 
+            previous_category = {}
+            for day in range(0,7):
+                previous_actions = ActionRepo.fetch_updated_actions_from_days(db, day, db_user.id)
+                main_categories = [action.main_category for action in previous_actions]
+                category_counts = Counter(main_categories)
+
+                total_count = len(previous_actions)
+                date = (datetime.utcnow() - timedelta(days=day)).date()
+
+                previous_category[day] = {
+                    'date': date.strftime("%Y-%m-%d"),
+                    'count': total_count,
+                    'categories': {category: category_counts.get(category, 0) for category in valid_categories}
+                }
+
             content = {
                 **content, 
                 "user_category": {
                     **user_category, 
-                    "Count": len(all_actions),
+                    "Total": len(all_actions),
                     "Start_date": start_date.strftime("%Y-%m-%d"),
                     "Final_date": final_date.strftime("%Y-%m-%d"),
                 },
+                "previous_category": previous_category,
             }
 
         else:
