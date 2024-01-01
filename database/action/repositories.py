@@ -43,13 +43,15 @@ class ActionRepo:
     def update_action(cls, db: Session, action_input: schemas.ActionUpdate) -> Optional[Action]:
         action: Action = cls.fetch_single_action_by_id(db, action_input.action_id)
 
-        # db.delete(action)
+        for key, value in action_input.dict().items():
+            if value != None and key != 'action_id':
+                setattr(action, key, value)
+
         db.commit()
         return action
     
     @classmethod
-    def delete_action(cls, db: Session, action_id: int) -> Optional[Action]:
-        action: Action = cls.fetch_single_action_by_id(db, action_id)
+    def delete_action(cls, db: Session, action: Action) -> Optional[Action]:
         db.delete(action)
         db.commit()
         return action

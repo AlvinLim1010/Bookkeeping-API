@@ -199,7 +199,10 @@ def update_actions(action_request: action_schemas.ActionUpdate, db: Session = De
 @app.delete('/actions/delete', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
 def delete_actions(action_request: action_schemas.ActionID, db: Session = Depends(get_db)):
     
-    action = ActionRepo.delete_action(db=db, action_id=action_request.action_id)
+    if action := ActionRepo.fetch_single_action_by_id(db=db, action_id=action_request.action_id):
+        deleted_action = ActionRepo.delete_action(db=db, action=action)
 
-    return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
+        return JSONResponse(status_code=HTTPStatus.OK, content=deleted_action.as_dict())
+    
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Action not found!")
     

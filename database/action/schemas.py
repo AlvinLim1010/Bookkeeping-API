@@ -18,8 +18,6 @@ class ActionCreate(ActionBase):
 
 class ActionUpdate(ActionID):
     date: Optional[datetime.date] = None
-    main_category: Optional[str] = None
-    sub_category: Optional[str] = None
     amount: Optional[float] = None
-    remarks: Optional[Dict]  = None
+    remarks: Optional[Dict] = None
     
