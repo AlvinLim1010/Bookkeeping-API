@@ -72,7 +72,7 @@ def user_info(user_request: user_schemas.UserBase, db: Session = Depends(get_db)
     if db_user := UserRepo.fetch_user_by_username(db=db, username=user_request.username.upper()):
         return JSONResponse(status_code=HTTPStatus.OK, content=db_user.as_dict())
     
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
 
 @app.post('/user/forget', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.OK)
@@ -90,17 +90,17 @@ def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = De
 
 
 
-@app.get('/actions', tags=["Action"], status_code=HTTPStatus.OK)
-def get_actions(username: str, db: Session = Depends(get_db)):
-    if db_user:= UserRepo.fetch_user_by_username(db, username=username.upper()):
+@app.post('/actions', tags=["Action"], status_code=HTTPStatus.OK)
+def get_actions(action_request: action_schemas.ActionBase, db: Session = Depends(get_db)):
+    if db_user:= UserRepo.fetch_user_by_username(db, username=action_request.username.upper()):
         all_actions = ActionRepo.fetch_actions_by_user_id(db, db_user.id)
         content = [action.as_dict() for action in all_actions]
         return JSONResponse(status_code=HTTPStatus.OK, content=content)
     
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
-@app.get('/actions/overview', tags=["Action"], status_code=HTTPStatus.OK)
-def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get_db)):
+@app.post('/actions/overview', tags=["Action"], status_code=HTTPStatus.OK)
+def get_actions_overview(action_request: action_schemas.ActionBase, db: Session = Depends(get_db)):
     all_actions = ActionRepo.fetch_all_actions(db)
 
     sorted_actions: List[models.Action] = sorted(all_actions, key=lambda x: x.date)
@@ -123,8 +123,8 @@ def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get
         },
     }
     
-    if username:
-        if db_user:= UserRepo.fetch_user_by_username(db, username=username.upper()):
+    if action_request.username:
+        if db_user:= UserRepo.fetch_user_by_username(db, username=action_request.username.upper()):
             all_actions = ActionRepo.fetch_actions_by_user_id(db, db_user.id)
             sorted_actions: List[models.Action] = sorted(all_actions, key=lambda x: x.date)
             start_date = sorted_actions[0].date
@@ -162,7 +162,7 @@ def get_actions(username: Optional[str] = Query(None), db: Session = Depends(get
             }
 
         else:
-            raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
     return JSONResponse(status_code=HTTPStatus.OK, content=content)
 
@@ -186,7 +186,7 @@ def create_actions(action_request: action_schemas.ActionCreate, db: Session = De
         
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Action is not allowed!")
     
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found!")
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
 
 @app.patch('/actions/update', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
@@ -204,5 +204,5 @@ def delete_actions(action_request: action_schemas.ActionID, db: Session = Depend
 
         return JSONResponse(status_code=HTTPStatus.OK, content=deleted_action.as_dict())
     
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Action not found!")
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Action not found!")
     
