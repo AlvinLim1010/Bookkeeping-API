@@ -63,5 +63,21 @@ class UserRepo:
         db.commit()
         db.refresh(user)
         return user
+    
+    @classmethod
+    def update_info(cls, db: Session, input: schemas.UserUpdateInfo) -> Optional[User]:
+        user: User = cls.base.fetch_user_by_email(db, input.email)
+
+        for key, value in input.dict().items():
+            if value != None and key != 'email':
+                if key == 'username':
+                    setattr(user, key, value.upper())
+                elif key == 'new_email':
+                    setattr(user, 'email', value)
+                else:
+                    setattr(user, key, value)
+
+        db.commit()
+        return user
 
         

@@ -25,7 +25,7 @@ app = create_app()
 models.Base.metadata.create_all(bind=engine)
 
 
-@app.post('/user/login', tags=["User"], response_model=user_schemas.UserLogin, status_code=HTTPStatus.OK)
+@app.post('/user/login', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
 def user_login(user_request: user_schemas.UserLogin, db: Session = Depends(get_db)):
     if user := UserRepo.fetch_user_by_email(db=db, email=user_request.email):
         if UserRepo.check_password(user_keyin_password=user_request.password, user_db_password=user.password):
@@ -37,7 +37,7 @@ def user_login(user_request: user_schemas.UserLogin, db: Session = Depends(get_d
     raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Incorrect Email/Password!")
 
 
-@app.post('/user/register', tags=["User"], response_model=user_schemas.UserCreate, status_code=HTTPStatus.CREATED)
+@app.post('/user/register', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.CREATED)
 def user_register(user_request: user_schemas.UserCreate, db: Session = Depends(get_db)):
     if UserRepo.fetch_user_by_username(db=db, username=user_request.username.upper()):
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="User already exists!")
@@ -54,20 +54,33 @@ def user_register(user_request: user_schemas.UserCreate, db: Session = Depends(g
     return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
 
 
-@app.post('/user/reset', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.OK)
+@app.patch('/user/reset', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
 def user_reset_password(user_request: user_schemas.UserUpdate, db: Session = Depends(get_db)):
-    db_user = UserRepo.fetch_user_by_email(db=db, email=user_request.email)
-    if UserRepo.check_password(user_keyin_password=user_request.old_password, user_db_password=db_user.password):
 
-        if UserRepo.check_password(user_keyin_password=user_request.new_password, user_db_password=db_user.password):
-            raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Same Password Entered!")
+    if db_user := UserRepo.fetch_user_by_email(db=db, email=user_request.email):
+        if UserRepo.check_password(user_keyin_password=user_request.old_password, user_db_password=db_user.password):
 
-        user = UserRepo.update_password(db=db, input=user_request)
+            if UserRepo.check_password(user_keyin_password=user_request.new_password, user_db_password=db_user.password):
+                raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Same Password Entered!")
+
+            user = UserRepo.update_password(db=db, input=user_request)
+            return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
+        
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Old Password Incorrect!")
+    
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
+
+@app.patch('/user/update', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
+def user_update_info(user_request: user_schemas.UserUpdateInfo, db: Session = Depends(get_db)):
+
+    if UserRepo.fetch_user_by_email(db=db, email=user_request.email):
+        user = UserRepo.update_info(db=db, input=user_request)
+
         return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
     
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Old Password Incorrect!")
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
-@app.post('/user/info', tags=["User"], response_model=user_schemas.UserBase, status_code=HTTPStatus.OK)
+@app.post('/user/info', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
 def user_info(user_request: user_schemas.UserBase, db: Session = Depends(get_db)):
     if db_user := UserRepo.fetch_user_by_username(db=db, username=user_request.username.upper()):
         return JSONResponse(status_code=HTTPStatus.OK, content=db_user.as_dict())
@@ -75,7 +88,7 @@ def user_info(user_request: user_schemas.UserBase, db: Session = Depends(get_db)
     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
 
-@app.post('/user/forget', tags=["User"], response_model=user_schemas.UserUpdate, status_code=HTTPStatus.OK)
+@app.post('/user/forget', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
 def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = Depends(get_db)):
     if UserRepo.fetch_user_by_email(db=db, email=user_request.email):
 
@@ -166,7 +179,7 @@ def get_actions_overview(action_request: action_schemas.ActionBase, db: Session 
 
     return JSONResponse(status_code=HTTPStatus.OK, content=content)
 
-@app.post('/actions/create', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.CREATED)
+@app.post('/actions/create', tags=["Action"], response_model=action_schemas.ActionReturn, status_code=HTTPStatus.CREATED)
 def create_actions(action_request: action_schemas.ActionCreate, db: Session = Depends(get_db)):
     if db_user:= UserRepo.fetch_user_by_username(db, username=action_request.username.upper()):
 
@@ -189,14 +202,16 @@ def create_actions(action_request: action_schemas.ActionCreate, db: Session = De
     raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found!")
 
 
-@app.patch('/actions/update', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
+@app.patch('/actions/update', tags=["Action"], response_model=action_schemas.ActionReturn, status_code=HTTPStatus.OK)
 def update_actions(action_request: action_schemas.ActionUpdate, db: Session = Depends(get_db)):
-    action = ActionRepo.update_action(db=db, action_input=action_request)
+    if action := ActionRepo.fetch_single_action_by_id(db, action_request.action_id):
+        action = ActionRepo.update_action(db=db, action_input=action_request)
 
-    return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
+        return JSONResponse(status_code=HTTPStatus.OK, content=action.as_dict())
+    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Action not found!")
 
 
-@app.delete('/actions/delete', tags=["Action"], response_model=action_schemas.ActionCreate, status_code=HTTPStatus.OK)
+@app.delete('/actions/delete', tags=["Action"], response_model=action_schemas.ActionReturn, status_code=HTTPStatus.OK)
 def delete_actions(action_request: action_schemas.ActionID, db: Session = Depends(get_db)):
     
     if action := ActionRepo.fetch_single_action_by_id(db=db, action_id=action_request.action_id):

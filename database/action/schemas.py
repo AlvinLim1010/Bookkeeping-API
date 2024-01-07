@@ -20,4 +20,8 @@ class ActionUpdate(ActionID):
     date: Optional[datetime.date] = None
     amount: Optional[float] = None
     remarks: Optional[Dict] = None
+
+class ActionReturn(ActionCreate):
+      id: int
+      user_id: int
     
