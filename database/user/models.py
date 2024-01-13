@@ -26,5 +26,6 @@ class User(Base):
             'id': self.id,
             'username': self.username,
             'email': self.email,
+            'joined_date': self.created_at.strftime("%d/%m/%Y"),
         }
     
