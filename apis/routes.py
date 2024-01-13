@@ -29,10 +29,10 @@ models.Base.metadata.create_all(bind=engine)
 def user_login(user_request: user_schemas.UserLogin, db: Session = Depends(get_db)):
     if user := UserRepo.fetch_user_by_email(db=db, email=user_request.email):
         if UserRepo.check_password(user_keyin_password=user_request.password, user_db_password=user.password):
-            if user.is_verified:
-                return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
+            # if user.is_verified:
+            return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
             
-            raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="Please Verified your email first!")
+            # raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="Please Verified your email first!")
         
     raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Incorrect Email/Password!")
 
@@ -40,6 +40,9 @@ def user_login(user_request: user_schemas.UserLogin, db: Session = Depends(get_d
 @app.post('/user/register', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.CREATED)
 def user_register(user_request: user_schemas.UserCreate, db: Session = Depends(get_db)):
     if UserRepo.fetch_user_by_username(db=db, username=user_request.username.upper()):
+        raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="User already exists!")
+    
+    if UserRepo.fetch_user_by_email(db=db, email=user_request.email):
         raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="User already exists!")
     
     hash_password, salt = UserRepo.hash_password(user_request.password)
@@ -63,7 +66,7 @@ def user_reset_password(user_request: user_schemas.UserUpdate, db: Session = Dep
             if UserRepo.check_password(user_keyin_password=user_request.new_password, user_db_password=db_user.password):
                 raise HTTPException(status_code=HTTPStatus.CONFLICT, detail="Same Password Entered!")
 
-            user = UserRepo.update_password(db=db, input=user_request)
+            user = UserRepo.update_password(db=db, input=user_request, random_password=False)
             return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
         
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Old Password Incorrect!")
@@ -89,17 +92,14 @@ def user_info(user_request: user_schemas.UserBase, db: Session = Depends(get_db)
 
 
 @app.post('/user/forget', tags=["User"], response_model=user_schemas.UserReturn, status_code=HTTPStatus.OK)
-def user_forgot_password(user_request: user_schemas.UserUpdate, db: Session = Depends(get_db)):
+def user_forgot_password(user_request: user_schemas.UserEmail, db: Session = Depends(get_db)):
     if UserRepo.fetch_user_by_email(db=db, email=user_request.email):
 
-        # Generate random password
-        user_request.new_password = 'abc123'
-
-        user = UserRepo.update_password(db=db, input=user_request)
+        user = UserRepo.update_password(db=db, input=user_request, random_password=True)
 
         return JSONResponse(status_code=HTTPStatus.OK, content=user.as_dict())
         
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Email does not exists!")
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User does not exists!")
 
 
 

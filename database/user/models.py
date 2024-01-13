@@ -4,7 +4,6 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from database import Base
     
 class User(Base):
-    # print(datetime.today().date())
     __tablename__ = "user"
     
     id = Column(Integer, primary_key=True)

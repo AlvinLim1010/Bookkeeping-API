@@ -52,10 +52,15 @@ class UserRepo:
         return user
 
     @classmethod
-    def update_password(cls, db: Session, input: schemas.UserUpdate) -> Optional[User]:
+    def update_password(cls, db: Session, input: schemas.UserEmail, random_password: bool) -> Optional[User]:
         user = cls.base.fetch_user_by_email(db, input.email)
         
-        hash_password, salt = UserRepo.hash_password(input.new_password)
+        if random_password:
+            password = 'abc123'
+            hash_password, salt = UserRepo.hash_password(password)
+        else:
+            hash_password, salt = UserRepo.hash_password(input.new_password)
+
         new_password = f"{hash_password} {salt}"
 
         user.password = new_password
