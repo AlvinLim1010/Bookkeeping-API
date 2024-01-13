@@ -5,17 +5,17 @@ This backend system is designed to manage bookkeeping and financial data. It sto
 # Prerequisites
 - Python 3.11
 - PostgreSQL 16
-- Frontend Repository
+- [Frontend Repository](https://github.com/AlvinLim1010/Bookkeeping-frontend)
 
 # Installation
 1. Clone the repository:
    ```
-   git clone https://github.com/your-username/your-backend-repo.git
+   git clone https://github.com/AlvinLim1010/Bookkeeping-API.git
    ```
 
 2. Navigate to the project directory:
    ```
-   cd your-backend-repo
+   cd Bookkeeping-API
    ```
 
 3. Create and use the virtual environment:
