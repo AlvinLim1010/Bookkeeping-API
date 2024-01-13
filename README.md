@@ -62,4 +62,3 @@ Access the API documentation at http://localhost:5000/docs/ to explore available
 
 # Frontend Integration
 - Integrate this backend with the frontend by updating the frontend API URLs to point to your deployed backend.
-- 
